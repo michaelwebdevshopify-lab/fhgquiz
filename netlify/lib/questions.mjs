@@ -318,7 +318,7 @@ export const QUIZ = {
     {
       "q": "In what year was Faith Heroic Generation founded?",
       "options": [
-        "2010",
+        "2016",
         "1958",
         "1971",
         "2001"
@@ -453,7 +453,7 @@ export const QUIZ = {
         "15%–20%",
         "3%"
       ],
-      "answer": 2
+      "answer": 3
     },
     {
       "q": "What percentage is listed for a Manager?",
