@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neolife & FHG Training Examination</title>
+<style>
+:root{--navy:#12315b;--blue:#2459a6;--ink:#182235;--muted:#667085;--line:#e4e9f0;--bg:#f3f6fa;--white:#fff;--green:#16794b;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:var(--navy);color:white;padding:22px 16px}header .inner{max-width:960px;margin:auto}h1{font-size:clamp(1.35rem,4vw,2rem);margin:0}header p{margin:5px 0 0;color:#dce7f7}
+main{max-width:960px;margin:26px auto;padding:0 14px 50px}.panel,.question-card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 4px 18px rgba(16,24,40,.04)}
+.start-panel{max-width:600px;margin:32px auto}.field{margin:16px 0}.field label{display:block;font-weight:650;margin-bottom:7px}.field input{width:100%;padding:12px 13px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}
+button{border:0;border-radius:9px;padding:12px 18px;background:var(--blue);color:white;font:700 1rem system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#e8eef7;color:var(--navy)}
+.exam-top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.timer{font-weight:800;font-size:1.15rem;color:var(--navy);background:#e7eef9;padding:8px 13px;border-radius:9px}.timer.warn{color:#9a5b00;background:#fff0d5}.timer.danger{color:#fff;background:var(--red)}
+.progress{height:8px;background:#e8edf4;border-radius:99px;overflow:hidden;margin:12px 0 20px}.progress>div{height:100%;background:var(--blue);width:0}
+.qhead{font-weight:750;font-size:1.08rem;margin:0 0 15px}.choice{display:flex;gap:11px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:10px;margin:9px 0;cursor:pointer}.choice:hover{background:#f8faff}.choice input{margin-top:5px;accent-color:var(--blue)}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap}.counter{color:var(--muted);font-size:.94rem}.hidden{display:none!important}
+.result{text-align:center}.score{font-size:2.6rem;font-weight:850;color:var(--navy);margin:8px}.subtle{color:var(--muted)}.err{color:var(--red);font-weight:650}
+.review{margin-top:22px;text-align:left}.review-item{padding:13px 0;border-bottom:1px solid var(--line)}.correct{color:var(--green);font-weight:700}.wrong{color:var(--red);font-weight:700}
+.resume{background:#eef3fb;border:1px solid #d3e0f3;border-radius:11px;padding:14px;margin:16px 0}
+.spin{width:38px;height:38px;border:4px solid #e3e9f3;border-top-color:var(--blue);border-radius:50%;animation:s 1s linear infinite;margin:10px auto 16px}@keyframes s{to{transform:rotate(360deg)}}
+@media print{header{background:white;color:black}header p{color:#444}.no-print{display:none!important}body{background:white}.panel,.question-card{box-shadow:none;border:0}}
+</style>
+</head>
+<body>
+<header><div class="inner"><h1>Neolife &amp; FHG Training Examination</h1><p>60 questions · Multiple choice · Timed assessment</p></div></header>
+<main>
+
+<section id="intro" class="panel start-panel">
+  <h2>Candidate Details</h2>
+  <p class="subtle">Enter your name to begin. The timer starts when you click Start Examination.</p>
+  <div id="resumeBox" class="resume hidden"><strong>You have an unfinished examination</strong><p class="subtle" style="margin:6px 0 10px">Started as <b id="resumeName"></b>. Your timer kept running while you were away.</p><button id="resumeBtn">Resume Examination</button></div>
+  <div id="newBox">
+    <div class="field"><label for="candidate">Full name</label><input id="candidate" type="text" placeholder="Enter your full name" autocomplete="name" maxlength="80"></div>
+    <div class="field"><label>Examination duration</label><p style="margin:0"><strong>30 minutes</strong> — fixed for every candidate.</p></div>
+    <button id="startBtn">Start Examination</button>
+  </div>
+  <p class="err hidden" id="introErr"></p>
+  <p class="subtle" style="font-size:.88rem">One attempt per browser/device. The exam submits automatically when time expires.</p>
+</section>
+
+<section id="locked" class="panel start-panel hidden"><h2>Examination Already Submitted</h2><p class="subtle">This examination has already been submitted on this browser/device.</p></section>
+
+<section id="quiz" class="hidden">
+  <div class="exam-top"><div><strong id="candidateLabel"></strong><div class="counter">Question <span id="currentNum">1</span> of <span id="totalNum">60</span></div></div><div class="timer" id="timer">30:00</div></div>
+  <div class="progress"><div id="progressBar"></div></div>
+  <div class="question-card">
+    <p class="qhead" id="questionText"></p>
+    <div id="choices"></div>
+    <div class="actions"><button class="secondary" id="prevBtn">Previous</button><span class="counter" id="answeredCount">0 answered</span><button id="nextBtn">Next</button><button class="hidden" id="submitBtn">Submit Examination</button></div>
+  </div>
+  <p class="subtle">Your answers are saved as you move between questions. Submit when you are finished, or the exam will submit automatically when time expires.</p>
+</section>
+
+<section id="submitting" class="panel result hidden"><div class="spin" id="spin"></div><h2 id="subTitle">Submitting your examination…</h2><p class="subtle" id="subMsg">Please keep this page open.</p><button class="hidden" id="retry">Retry Submission</button></section>
+
+<section id="result" class="panel result hidden">
+  <h2>Examination Submitted</h2><div id="resultName" class="subtle"></div><div class="score" id="score"></div><div id="percentage" style="font-weight:700"></div><p id="resultMessage"></p>
+  <div class="actions no-print" style="justify-content:center"><button id="printBtn" class="secondary">Print Result</button></div>
+  <div class="review" id="review"></div>
+</section>
+
+</main>
+<script>
+const KEY='neolife_fhg_exam_60_v1',AKEY=KEY+'_attempt',API='/api';
+let Q=[],TOTAL=30*60,index=0,answers=[],started=0,timerId=null,candidate='',attemptId=null,submitting=false,lastExpired=false;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const letter=n=>String.fromCharCode(65+n);
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const isBlank=v=>v==null||(Array.isArray(v)&&!v.length);
+
+function show(id){['intro','locked','quiz','submitting','result'].forEach(s=>$(s).classList.toggle('hidden',s!==id))}
+function completed(){return localStorage.getItem(KEY)==='completed'}
+function getAttempt(){try{return JSON.parse(localStorage.getItem(AKEY)||'null')}catch(e){return null}}
+function persist(){try{localStorage.setItem(AKEY,JSON.stringify({id:attemptId,name:candidate,answers,index}))}catch(e){}}
+function introError(msg){$('introErr').textContent=msg;$('introErr').classList.toggle('hidden',!msg)}
+
+async function api(path,body){
+  const r=await fetch(API+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){const e=new Error(d.error||'Request failed ('+r.status+')');e.status=r.status;throw e}
+  return d;
+}
+
+function render(){
+  const q=Q[index],multi=q.multi,chosen=Array.isArray(answers[index])?answers[index]:answers[index]==null?[]:[answers[index]];
+  $('currentNum').textContent=index+1;
+  $('questionText').textContent=`${index+1}. ${q.q}`+(multi?' (Select all that apply)':'');
+  $('choices').innerHTML=q.options.map((o,n)=>`<label class="choice"><input type="${multi?'checkbox':'radio'}" name="answer" value="${n}" ${chosen.includes(n)?'checked':''}><span><strong>${letter(n)}.</strong> ${esc(o)}</span></label>`).join('');
+  $('choices').querySelectorAll('input').forEach(x=>x.onchange=()=>{
+    if(multi){const v=Array.isArray(answers[index])?answers[index]:[];answers[index]=x.checked?[...v,+x.value]:v.filter(z=>z!==+x.value)}else answers[index]=+x.value;
+    persist();updateProgress();
+  });
+  $('prevBtn').disabled=index===0;
+  $('nextBtn').classList.toggle('hidden',index===Q.length-1);
+  $('submitBtn').classList.toggle('hidden',index!==Q.length-1);
+  updateProgress();
+}
+function updateProgress(){
+  $('answeredCount').textContent=`${answers.filter(v=>!isBlank(v)).length} answered`;
+  $('progressBar').style.width=`${((index+1)/Q.length)*100}%`;
+}
+function tick(){
+  const r=Math.max(0,TOTAL-Math.floor((Date.now()-started)/1000));
+  $('timer').textContent=fmt(r);
+  $('timer').className='timer'+(r<=60?' danger':r<=300?' warn':'');
+  if(!r)finish(true);
+}
+
+async function start(resume){
+  if(completed()){show('locked');return}
+  introError('');
+  const saved=resume?getAttempt():null;
+  let body;
+  if(saved&&saved.id)body={id:saved.id};
+  else{
+    const name=$('candidate').value.trim();
+    if(name.length<2){introError('Please enter your full name.');$('candidate').focus();return}
+    body={name};
+  }
+  const btn=resume?$('resumeBtn'):$('startBtn'),label=btn.textContent;
+  btn.disabled=true;btn.textContent='Starting…';
+  try{
+    const d=await api('/start',body);
+    attemptId=d.id;candidate=d.name;Q=d.questions;TOTAL=d.totalSeconds;
+    answers=saved&&Array.isArray(saved.answers)&&saved.answers.length===Q.length?saved.answers:Array(Q.length).fill(null);
+    index=saved?Math.min(Math.max(0,saved.index|0),Q.length-1):0;
+    started=Date.now()-d.elapsed*1000;
+    localStorage.setItem(KEY,'in_progress');persist();
+    $('candidateLabel').textContent=candidate;$('totalNum').textContent=Q.length;
+    show('quiz');render();
+    window.onbeforeunload=()=>'Your examination is in progress.';
+    timerId=setInterval(tick,250);tick();
+  }catch(e){
+    btn.disabled=false;btn.textContent=label;
+    if(e.status===409){localStorage.setItem(KEY,'completed');localStorage.removeItem(AKEY);show('locked');return}
+    if(e.status===404&&saved){localStorage.removeItem(AKEY);localStorage.removeItem(KEY);$('resumeBox').classList.add('hidden');$('newBox').classList.remove('hidden');introError('Your previous attempt could not be found. Please start again.');return}
+    introError('Could not start the examination: '+e.message+'. Check your internet connection and try again.');
+  }
+}
+
+async function finish(expired){
+  if(submitting)return;
+  submitting=true;lastExpired=lastExpired||!!expired;
+  clearInterval(timerId);
+  show('submitting');
+  $('spin').classList.remove('hidden');$('retry').classList.add('hidden');
+  $('subTitle').textContent='Submitting your examination…';$('subMsg').textContent='Please keep this page open.';
+  try{
+    const d=await api('/submit',{id:attemptId,answers,expired:lastExpired});
+    localStorage.setItem(KEY,'completed');localStorage.removeItem(AKEY);
+    window.onbeforeunload=null;
+    showResult(d);
+  }catch(e){
+    submitting=false;
+    $('spin').classList.add('hidden');$('retry').classList.remove('hidden');
+    $('subTitle').textContent='Submission failed';
+    $('subMsg').textContent=e.message+'. Your answers are saved on this device — tap Retry when you are back online.';
+  }
+}
+
+function showResult(d){
+  show('result');
+  $('resultName').textContent=`Candidate: ${d.name}`;
+  $('score').textContent=`${d.correct} / ${d.total}`;
+  $('percentage').textContent=`${d.percent}% — ${d.passed?'Passed':'Needs Improvement'}`;
+  $('percentage').className=d.passed?'correct':'wrong';
+  $('resultMessage').textContent=(d.expired?'Time expired. Your examination was submitted automatically.':'Your examination has been submitted.')+' Time taken: '+fmt(d.timeTaken)+'.';
+  $('review').innerHTML='<h3>Answer Review</h3>'+d.review.map((q,i)=>{
+    const vals=Array.isArray(q.answer)?q.answer:[q.answer];
+    const yv=isBlank(q.yours)?null:(Array.isArray(q.yours)?q.yours:[q.yours]);
+    const yours=yv?yv.map(v=>letter(v)+'. '+esc(q.options[v])).join('; '):'Not answered';
+    const corr=vals.map(v=>letter(v)+'. '+esc(q.options[v])).join('; ');
+    return `<div class="review-item"><strong>${i+1}. ${esc(q.q)}</strong><br><span class="${q.ok?'correct':'wrong'}">${q.ok?'Correct':'Incorrect'}</span> · Your answer: ${yours}<br>Correct answer: <strong>${corr}</strong></div>`;
+  }).join('');
+}
+
+$('startBtn').onclick=()=>start(false);
+$('resumeBtn').onclick=()=>start(true);
+$('candidate').onkeydown=e=>{if(e.key==='Enter')start(false)};
+$('prevBtn').onclick=()=>{if(index>0){index--;persist();render()}};
+$('nextBtn').onclick=()=>{if(index<Q.length-1){index++;persist();render()}};
+$('submitBtn').onclick=()=>{
+  const blank=answers.filter(isBlank).length;
+  if(confirm(blank?`You have ${blank} unanswered question${blank>1?'s':''}. Submit your examination now?`:'Submit your examination now?'))finish(false);
+};
+$('retry').onclick=()=>finish(lastExpired);
+$('printBtn').onclick=()=>window.print();
+
+(function init(){
+  if(completed()){show('locked');return}
+  const saved=getAttempt();
+  if(localStorage.getItem(KEY)==='in_progress'&&saved&&saved.id){
+    $('resumeName').textContent=saved.name||'';
+    $('resumeBox').classList.remove('hidden');$('newBox').classList.add('hidden');
+  }
+})();
+</script>
+</body></html>
